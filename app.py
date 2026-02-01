@@ -1,15 +1,14 @@
 import random
 import string
-import asyncio
-import threading
+import os
 from flask import Flask, render_template, jsonify
 from flask_cors import CORS
-from aiosmtpd.controller import Controller
 
 app = Flask(__name__)
 CORS(app)
 
 MAILBOX = {}
+
 
 # =========================
 # Random email generator
@@ -17,32 +16,6 @@ MAILBOX = {}
 def generate_email():
     name = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
     return f"{name}@tempmail.local"
-
-
-# =========================
-# SMTP Handler
-# =========================
-class MailHandler:
-    async def handle_DATA(self, server, session, envelope):
-        recipient = envelope.rcpt_tos[0]
-        message = envelope.content.decode()
-
-        if recipient not in MAILBOX:
-            MAILBOX[recipient] = []
-
-        MAILBOX[recipient].append(message)
-        return '250 OK'
-
-
-# =========================
-# Start SMTP server
-# =========================
-def start_smtp():
-    controller = Controller(MailHandler(), hostname='0.0.0.0', port=1025)
-    controller.start()
-
-
-threading.Thread(target=start_smtp, daemon=True).start()
 
 
 # =========================
@@ -66,7 +39,21 @@ def inbox(email):
 
 
 # =========================
-# Run
+# Demo route (testing only)
+# lets you manually add mail
+# =========================
+@app.route("/demo/<email>/<msg>")
+def demo(email, msg):
+    MAILBOX.setdefault(email, []).append(msg)
+    return jsonify({"status": "added"})
+
+
+# =========================
+# Run (Railway compatible)
 # =========================
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000)),
+        debug=False
+    )
