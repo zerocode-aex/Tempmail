@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Temp Mail</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+
+<div class="w-full max-w-xl p-6 bg-gray-800 rounded-2xl shadow-xl">
+
+  <h1 class="text-3xl font-bold mb-6 text-center">Temp Mail</h1>
+
+  <div class="flex gap-2">
+    <input id="emailBox" class="flex-1 p-3 rounded bg-gray-700" readonly>
+    <button onclick="copyEmail()" class="bg-green-500 px-4 rounded">Copy</button>
+  </div>
+
+  <button onclick="generate()" class="mt-4 w-full bg-blue-600 p-3 rounded">
+    Generate Email
+  </button>
+
+  <div class="mt-6">
+    <h2 class="text-lg font-semibold mb-2">Inbox</h2>
+    <div id="inbox" class="bg-gray-700 p-3 rounded h-64 overflow-y-auto text-sm"></div>
+  </div>
+
+</div>
+
+<script>
+let currentEmail = ""
+
+async function generate(){
+  let res = await fetch('/generate')
+  let data = await res.json()
+
+  currentEmail = data.email
+  document.getElementById('emailBox').value = currentEmail
+}
+
+async function loadInbox(){
+  if(!currentEmail) return
+
+  let res = await fetch('/inbox/' + currentEmail)
+  let data = await res.json()
+
+  let box = document.getElementById('inbox')
+  box.innerHTML = ""
+
+  data.mails.forEach(mail=>{
+    let div = document.createElement('div')
+    div.className="bg-gray-600 p-2 mb-2 rounded"
+    div.innerText = mail
+    box.appendChild(div)
+  })
+}
+
+function copyEmail(){
+  navigator.clipboard.writeText(currentEmail)
+}
+
+setInterval(loadInbox, 2000)
+</script>
+
+</body>
+</html>
